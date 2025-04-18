@@ -1,0 +1,69 @@
+# Use the official Node.js image from the Docker Hub
+FROM node:18
+
+# Set the working directory in the container
+WORKDIR /usr/src/app
+
+ARG _DB_HOST=snsdb
+ARG _DB_PORT=3306
+ARG _DB_USER=root
+ARG _DB_DATABASE=screwsspanners
+ARG _DB_PASSWORD=FileOpen@2022
+ARG _X_IP=
+
+ARG _ASES_HOST=smtp.gmail.com
+ARG _ASES_USER=screwsspanners@gmail.com
+ARG _ASES_PASS=spyfrrmzneqacpxr
+ARG _REDIS_HOST=cache
+ARG _REDIS_PASSWORD=password
+ARG _REDIS_PORT=6379
+ARG _REDIS_DB=0
+ARG _AWS_ACCESS_KEY_ID=
+ARG _AWS_SECRET_ACCESS_KEY=
+ARG _AWS_DEFAULT_REGION=us-east-1
+ARG _AWS_BUCKET=spannersbucket
+ARG _ADMIN_EMAIL_ADDRESS=screwsspanners@gmail.com
+ARG _ADMIN_PHONE=9012345678
+ARG _DEV_APP_PORT=6000
+ARG _NODE_ENV=development
+
+ENV DB_PORT=${_DB_PORT}
+ENV DB_HOST=${_DB_HOST}
+ENV DB_USER=${_DB_USER}
+ENV DB_DATABASE=${_DB_DATABASE}
+ENV DB_PASSWORD=${_DB_PASSWORD}
+
+ENV REDIS_HOST=${_REDIS_HOST}
+ENV REDIS_PASSWORD=${_REDIS_PASSWORD}
+ENV REDIS_PORT=${_REDIS_PORT}
+ENV REDIS_DB=${_REDIS_DB}
+
+
+ENV ASES_HOST=$_ASES_HOST
+ENV ASES_USER=$_ASES_USER
+ENV ASES_PASS=$_ASES_PASS
+
+ENV AWS_ACCESS_KEY_ID=$_AWS_ACCESS_KEY_ID
+ENV AWS_SECRET_ACCESS_KEY=$_AWS_SECRET_ACCESS_KEY
+ENV AWS_DEFAULT_REGION=$_AWS_DEFAULT_REGION
+ENV AWS_BUCKET=$_AWS_BUCKET
+ENV ADMIN_EMAIL_ADDRESS=$_ADMIN_EMAIL_ADDRESS
+ENV ADMIN_PHONE=$_ADMIN_PHONE
+ENV DEV_APP_PORT=$_DEV_APP_PORT
+ENV X_IP=$_X_IP
+ENV NODE_ENV=$_NODE_ENV
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Expose the port your app will run on
+EXPOSE 6000
+
+# Define the command to run your application
+CMD ["node", "init.js"]

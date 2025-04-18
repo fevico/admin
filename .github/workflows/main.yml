@@ -1,0 +1,106 @@
+name: Deploy using Azure SSM Send-Command
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Echoing
+        run: |
+          echo Building Docker Images, pushing to Docker Hub and Deploying to AWS Instance......
+
+      - name: Docker Hub Login
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_ACCESS_TOKEN: ${{secrets.DOCKER_TOKEN}}
+        run: |
+          docker login -u $DOCKER_USERNAME -p $DOCKER_ACCESS_TOKEN
+
+      - name: Docker Build Image
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_ACCESS_TOKEN: ${{secrets.DOCKER_TOKEN}}
+          DB_PORT: ${{secrets.DB_PORT}}
+          DB_DATABASE: ${{secrets.DB_DATABASE}}
+          DB_USERNAME: ${{secrets.DB_USERNAME}}
+          DB_PASSWORD: ${{secrets.DB_PASSWORD}}
+          DB_HOST: ${{secrets.DB_HOST}}
+          ASES_HOST: ${{secrets.ASES_HOST}}
+          ASES_USER: ${{secrets.ASES_USER}}
+          ASES_PASS: ${{secrets.ASES_PASS}}
+          APP_PORT: ${{secrets.APP_PORT}}
+          REDIS_HOST: ${{secrets.REDIS_HOST}}
+          REDIS_PASSWORD: ${{secrets.REDIS_PASSWORD}}
+          REDIS_PORT: ${{secrets.REDIS_PORT}}
+          REDIS_DB: ${{secrets.REDIS_DB}}
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          AWS_DEFAULT_REGION: ${{secrets.AWS_DEFAULT_REGION}}
+          AWS_BUCKET: ${{secrets.AWS_BUCKET}}
+          ADMIN_EMAIL_ADDRESS: ${{secrets.ADMIN_EMAIL_ADDRESS}}
+          ADMIN_PHONE: ${{secrets.ADMIN_PHONE}}
+          X_IP: ${{secrets.X_IP}}
+          NODE_ENV: ${{secrets.NODE_ENV}}
+
+        run: |
+          docker build \
+            --build-arg="_DB_PORT=${{ secrets.DB_PORT }}" \
+            --build-arg="_DB_DATABASE=${{ secrets.DB_DATABASE }}" \
+            --build-arg="_DB_USER=${{ secrets.DB_USERNAME }}" \
+            --build-arg="_DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            --build-arg="_DB_HOST=${{ secrets.DB_HOST }}" \
+            --build-arg="_REDIS_HOST=${{ secrets.REDIS_HOST }}" \
+            --build-arg="_REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" \
+            --build-arg="_REDIS_PORT=${{ secrets.REDIS_PORT }}" \
+            --build-arg="_REDIS_DB=${{ secrets.REDIS_DB }}" \
+            --build-arg="_ASES_USER=${{ secrets.ASES_USER }}" \
+            --build-arg="_ASES_HOST=${{ secrets.ASES_HOST }}" \
+            --build-arg="_ASES_PASS=${{ secrets.ASES_PASS }}" \
+            --build-arg="_APP_PORT=${{ secrets.APP_PORT }}" \
+            --build-arg="_AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            --build-arg="_AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --build-arg="_AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" \
+            --build-arg="_AWS_BUCKET=${{ secrets.AWS_BUCKET }}" \
+            --build-arg="_ADMIN_EMAIL_ADDRESS=${{ secrets.ADMIN_EMAIL_ADDRESS }}" \
+            --build-arg="_ADMIN_PHONE=${{ secrets.ADMIN_PHONE }}" \
+            --build-arg="_NODE_ENV=${{ secrets.NODE_ENV }}" \
+            --build-arg="_X_IP=${{ secrets.X_IP }}" \
+            --tag ${{secrets.DOCKER_USERNAME}}/${{secrets.APP_NAME}}:${{secrets.BUILD_TAG}} -f Dockerfile .
+      - name: Docker Push Image
+        run: |
+          docker push ${{secrets.DOCKER_USERNAME}}/${{secrets.APP_NAME}}:${{secrets.BUILD_TAG}}
+
+      - name: Executing Remote SSH Commands using SSH Key
+        uses: appleboy/ssh-action@master
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_ACCESS_TOKEN: ${{secrets.DOCKER_TOKEN}}
+          APP_PORT: ${{secrets.APP_PORT}}
+          APP_NAME: ${{secrets.APP_NAME}}
+          BUILD_TAG: ${{secrets.BUILD_TAG}}
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOCKER_USERNAME,DOCKER_ACCESS_TOKEN,BUILD_TAG,APP_NAME,APP_PORT
+          script: |
+            docker stop $(docker stop $(docker ps -aq --filter ancestor=$DOCKER_USERNAME/$APP_NAME:$BUILD_TAG))
+            docker rmi $DOCKER_USERNAME/$APP_NAME:$BUILD_TAG -f
+            docker system prune --all --force --volumes
+            docker volume ls -qf dangling=true
+            docker login -u $DOCKER_USERNAME -p $DOCKER_ACCESS_TOKEN
+            docker pull $DOCKER_USERNAME/$APP_NAME:$BUILD_TAG
+            docker run --restart=always -d --name sns_admin -p $APP_PORT:6000 $DOCKER_USERNAME/$APP_NAME:$BUILD_TAG
+
+      - name: Echoing
+        run: |
+          echo Job Completed!
