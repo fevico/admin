@@ -15,13 +15,39 @@ const app = express();
 app.set('config', config);
 
 // CORS configuration: Allow all origins
+// app.use(
+//   cors({
+//     origin: '*', // Allow all origins
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+//     credentials: true, // Support cookies, Authorization headers
+//     maxAge: 86400, // Cache preflight for 24 hours
+//   })
+// );
+
 app.use(
   cors({
-    origin: '*', // Allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., Postman, curl)
+      if (!origin) return callback(null, true);
+
+      // Whitelist your frontend origins
+      const allowedOrigins = [
+        'http://localhost:5173', // Local frontend
+        'https://your-frontend-url.com', // Production frontend
+        // Add other origins as needed
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, origin); // Reflect the requesting origin
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true, // Support cookies, Authorization headers
-    maxAge: 86400, // Cache preflight for 24 hours
+    credentials: true,
+    maxAge: 86400,
   })
 );
 
