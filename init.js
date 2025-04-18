@@ -4,7 +4,7 @@ const stringUtil = require('./utils/stringUtil');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
-
+ 
 async function runMigrations() {
   return new Promise((resolve, reject) => {
     exec(`npx sequelize-cli db:migrate`, (error, stdout, stderr) => {

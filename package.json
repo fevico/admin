@@ -8,8 +8,8 @@
     "start": "nodemon init.js"
   },
   "engines": {
-    "node": "8.11.0",
-    "npm": "^5.6.0"
+    "node": "18.0.0",
+    "npm": "^9.0.0"
   },
   "author": "Ala'a Mezian",
   "license": "ISC",
