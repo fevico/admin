@@ -198,7 +198,7 @@ class ServiceController extends BaseController {
         spRegisteredLast7Days: last7DaysResult.count,
         spRegisteredThisMonth: thisMonthResult.count,
         spRegisteredThisYear: thisYearResult.count,
-        admins: serviceProvider,
+        serviceProvider: serviceProvider,
       };
   
       // Send the response

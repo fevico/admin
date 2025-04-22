@@ -60,7 +60,11 @@ const options = {
       },
       {
         name: 'Service',
-        description: 'Service-related operations (e.g., user counts, service providers)', // Added for serviceRouter
+        description: 'Service-related operations (e.g., user counts, service providers)',
+      },
+      {
+        name: 'Permissions',
+        description: 'Operations for managing permissions and their associations',
       },
     ],
     schemes: isProduction ? ['https'] : ['http'],
